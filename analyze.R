@@ -1,3 +1,4 @@
+#!/usr/bin/R
 library(data.table)
 library(plyr)
 library(ggplot2)

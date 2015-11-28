@@ -1,3 +1,4 @@
+#!/usr/bin/R
 #setwd("~/Downloads/csgo_hltv_glicko2/")
 set.seed(1337)
 # implement glicko2 rating (for steps s. Glickman (2013) http://www.glicko.net/glicko/glicko2.pdf)

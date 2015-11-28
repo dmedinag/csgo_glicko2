@@ -1,3 +1,4 @@
+#!/usr/bin/python
 # scrape HLTV results for CS:GO Matches
 
 # get website content
