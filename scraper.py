@@ -18,7 +18,7 @@ def formatMatch(hltvMatch):
 
 # gets all matches from one page
 def getMatchesOfPage(hltvUrl):
-   hltvReq = urllib2.Request(hltvUrl, headers={'User-Agent' : "github users please insert somethin meaningful here"}) 
+   hltvReq = urllib2.Request(hltvUrl, headers={'User-Agent' : "github users please insert something meaningful here"}) 
    hltvCon = urllib2.urlopen(hltvReq)
    hltvHTML = hltvCon.read()
    hltvSoup = BeautifulSoup(hltvHTML, 'html.parser')
