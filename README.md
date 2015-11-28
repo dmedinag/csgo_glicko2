@@ -2,6 +2,8 @@
 
 This repository includes code to rank CS:GO pro teams with [Mark Glickman's Glicko-2 Algorithm](http://www.glicko.net/glicko.html) with an own `R` implementation. Data on team's reults comes from [HLTV.org](http://www.hltv.org/?pageid=188&statsfilter=0&offset=0) and is scraped using a `python` script.
 
+See my reddit post for further explanation: https://www.reddit.com/r/GlobalOffensive/comments/3uikwa/csgo_pro_teams_world_ranking_using_glicko2_rating/
+
 ## Running the Analysis
 
 * `scraper.py` conatins code for scraping the data from [HLTV.org](http://www.hltv.org/). There are also some Tests at the end.
