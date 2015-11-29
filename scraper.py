@@ -5,7 +5,7 @@
 import urllib2
 from bs4 import BeautifulSoup
 import re
-#import csv
+import csv
 from time import gmtime, strftime
 import unicodecsv
 
@@ -31,7 +31,7 @@ def getMatchesOfPage(hltvUrl):
 
 # writes lists to file
 def writeMatchesToFile(matchesOfPage, iteration):
-   with open('hltv_org_matches_ 2014.csv', 'ab') as csvfile:
+   with open('hltv_org_matches_2014.csv', 'ab') as csvfile:
       hltvWriter = unicodecsv.writer(csvfile, quoting=csv.QUOTE_NONNUMERIC)
       if iteration == 0:
          hltvWriter.writerow(["date", "team1", "team2", "map", "event", "matchid", "teamid1", "teamid2", "eventid", "score1", "score2"])
