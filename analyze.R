@@ -10,7 +10,7 @@ GetPOSIXctDate <- function(datestring) {
 }
 
 #load data (everything is interpreted as character by default because of quoting in csv)
-hltv.data <- fread("hltv_org_matches_ 2014.csv", header = TRUE)
+hltv.data <- fread("hltv_org_matches_2014.csv", header = TRUE)
 
 # format data
 hltv.data$date <- as.POSIXct(strptime(hltv.data$date, "%d/%m %y"))
