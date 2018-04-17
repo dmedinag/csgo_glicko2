@@ -1,55 +1,90 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 # scrape HLTV results for CS:GO Matches
 
-# get website content
-import urllib2
+
+from requests import get
 from bs4 import BeautifulSoup
 import re
-import csv
+from csv import DictWriter
 from time import gmtime, strftime
-import unicodecsv
 
-# extract match information and format to list
+
 def formatMatch(hltvMatch):
-   hltvMatchNames = hltvMatch.get_text(";", strip = True)
-   hltvMatchScore = re.findall('\((\d*?)\)', hltvMatchNames)
-   hltvMatchIds = [re.search('(teamid|matchid|eventid)=?(\d*)', link.get('href')).group(2) for link in hltvMatch.select("a")]
-   hltvMatchLine = hltvMatchNames.split(';') + hltvMatchIds + hltvMatchScore
-   return hltvMatchLine
+    '''
+    extract match information and format to list
+    '''
+    # team names
+    hltvMatchNames = [name.get_text() for name in hltvMatch.select('div.team')]
+    # match id
+    hltvMatchLink = hltvMatch.select('a.a-reset')[0]['href'][9:] # removes the prefix '/matches/'
+    hltvMatchId = hltvMatchLink[:hltvMatchLink.index('/')]
+    # team ids
+    hltvMatchTeamLogoSources = [id_text['src'] for id_text in hltvMatch.select('img.team-logo')]
+    hltvMatchTeamIds = [src[src.replace('/', '_', src.count('/')-1).index('/')+1:] for src in hltvMatchTeamLogoSources]
+    # event id
+    hltvMatchEventLink = hltvMatch.select('td.event img')[0]['src']
+    hltvMatchEventLink = hltvMatchEventLink.replace('/', '', hltvMatchEventLink.count('/')-1)
+    hltvMatchEventId = hltvMatchEventLink[hltvMatchEventLink.index('/')+1:hltvMatchEventLink.index('.')]
+    
+    # score(s)
+    try:
+        # when there was a tie, retrieve the shared score.
+        # This will raise an Exception if there was no tie, handled afterwards
+        hltvMatchScoreTie = hltvMatch.select('span.score-tie')[0].get_text()
+        score1 = hltvMatchScoreTie
+        score2 = hltvMatchScoreTie
+        hltvMatchTeamWon = 0
+    except IndexError:
+        # when there wasn't a tie, retrieve the winning team and the different scores
+        hltvMatchTeamWon = hltvMatchNames.index(hltvMatch.select('div.team-won')[0].get_text())
+        score1 = hltvMatch.select('span.score-won')[0].get_text()
+        score2 = hltvMatch.select('span.score-lost')[0].get_text()
 
-# gets all matches from one page
+    return {
+        "team1": hltvMatchNames[hltvMatchTeamWon],
+        "team2": hltvMatchNames[1-hltvMatchTeamWon],
+        "map": hltvMatch.select('div.map-text')[0].get_text(),
+        "event": hltvMatch.select('span.event-name')[0].get_text(),
+        "matchid": hltvMatchId,
+        "teamid1": hltvMatchTeamIds[hltvMatchTeamWon],
+        "teamid2": hltvMatchTeamIds[1-hltvMatchTeamWon],
+        "eventid": hltvMatchEventId,
+        "score1": score1,
+        "score2": score2
+    }
+
 def getMatchesOfPage(hltvUrl):
-   hltvReq = urllib2.Request(hltvUrl, headers={'User-Agent' : "github users please insert something meaningful here"}) 
-   hltvCon = urllib2.urlopen(hltvReq)
-   hltvHTML = hltvCon.read()
-   hltvSoup = BeautifulSoup(hltvHTML, 'html.parser')
-   
-   hltvMatches = hltvSoup.select("#back > div.mainAreaNoHeadline > div.centerNoHeadline > div > div.covMainBoxContent > div > div > div")[5:]
-   hltvMatchesFormatted = [formatMatch(hltvMatch) for hltvMatch in hltvMatches]
-   
-   return hltvMatchesFormatted
+    '''
+    gets all matches from one page
+    '''
+    # get website content
+    hltvReq = get(hltvUrl, headers={'User-Agent' : "github users please insert something meaningful here"}) 
+    hltvHTML = hltvReq.text
+    # obtain the html soup from the raw content
+    hltvSoup = BeautifulSoup(hltvHTML, 'html.parser')
+    # retrieve a list with a soup per match
+    hltvMatches = hltvSoup.select('div.result-con')
+    # parse every match html soup into meaningful content
+    hltvMatchesFormatted = [formatMatch(hltvMatch) for hltvMatch in hltvMatches]
+        
+    return hltvMatchesFormatted
 
-# writes lists to file
+
 def writeMatchesToFile(matchesOfPage, iteration):
-   with open('hltv_org_matches_2014.csv', 'ab') as csvfile:
-      hltvWriter = unicodecsv.writer(csvfile, quoting=csv.QUOTE_NONNUMERIC)
-      if iteration == 0:
-         hltvWriter.writerow(["date", "team1", "team2", "map", "event", "matchid", "teamid1", "teamid2", "eventid", "score1", "score2"])
-      for match in matchesOfPage:
-         hltvWriter.writerow(match)
-
-# loops over pages (-> 8800 all matches in 2014 & 2015 at 27.11.2015)
-for i in range(0, 8800, 50):
-   hltvUrlbase = 'http://www.hltv.org/?pageid=188&statsfilter=0&offset='
-   hltvUrlOffset = str(i)
-   hltvUrl = hltvUrlbase + hltvUrlOffset
-   matchesOfPage = getMatchesOfPage(hltvUrl)
-   writeMatchesToFile(matchesOfPage, i)
-   print strftime("%Y-%m-%d %H:%M:%S: ", gmtime()) + str(i + 50) + " HLTV CS:GO matches completed."
+    '''
+    writes lists to file
+    '''
+    with open('hltv_org_matches_2018.csv', 'a+') as csvfile:
+        hltvWriter = DictWriter(csvfile, matchesOfPage[0].keys())
+        if iteration == 0:
+            hltvWriter.writeheader()
+        for match in matchesOfPage:
+            hltvWriter.writerow(match)
 
 
-
-
-
-
-
+for offset in range(0, 9000, 100):
+    hltvUrlbase = 'http://www.hltv.org/results?offset='
+    hltvUrl = hltvUrlbase + str(offset)
+    matchesOfPage = getMatchesOfPage(hltvUrl)
+    writeMatchesToFile(matchesOfPage, offset)
+    print(strftime("%Y-%m-%d %H:%M:%S: ", gmtime()) + str(offset + 50) + " HLTV CS:GO matches completed.")
